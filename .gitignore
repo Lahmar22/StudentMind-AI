@@ -3,6 +3,7 @@
 venv/
 env/
 data/*.csv
+models/*.joblib
 
 __pycache__/
 *.py[cod]
