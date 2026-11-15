@@ -1,4 +1,3 @@
-from preprocessing import pipelineData
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
@@ -17,9 +16,8 @@ import joblib
 from sklearn.pipeline import Pipeline
 from pathlib import Path
 
-X_train, X_test, y_train, y_test, preprocessor = pipelineData()
 
-def trainer_modeles(X_train, y_train, X_test, y_test):
+def trainer_modeles(X_train, y_train, X_test, y_test, preprocessor):
     models = {
         'Logistic Regression': LogisticRegression(
             C=1.0,
@@ -50,15 +48,21 @@ def trainer_modeles(X_train, y_train, X_test, y_test):
     }
 
     results = []
+    trained_models = {}
 
 
     for name, model in models.items():
 
-        model.fit(X_train, y_train)
+        pipeline = Pipeline([
+            ("preprocessing", preprocessor),
+            ("model", model)
+        ])
+        pipeline.fit(X_train, y_train)
+        trained_models[name] = model
 
-        y_pred = model.predict(X_test)
+        y_pred = pipeline.predict(X_test)
 
-        class_names = model.classes_
+        class_names = pipeline.classes_
 
         cm = confusion_matrix(
             y_test,
@@ -72,7 +76,11 @@ def trainer_modeles(X_train, y_train, X_test, y_test):
             'Precision': precision_score(y_test, y_pred, average='macro'),
             'Recall': recall_score(y_test, y_pred, average='macro'),
             'F1-Score': f1_score(y_test, y_pred, average='macro'),
-            'ROC AUC': roc_auc_score(y_test, model.predict_proba(X_test), multi_class='ovr'),
+            'ROC AUC': roc_auc_score(
+                y_test,
+                pipeline.predict_proba(X_test),
+                multi_class='ovr'
+            ),
             'Confusion Matrix': cm
         })
 
@@ -83,18 +91,16 @@ def trainer_modeles(X_train, y_train, X_test, y_test):
         ascending=False
     )
 
-    print(results_df)
+    # print(results_df)
+    return trained_models
 
 
 # trainer_modeles(X_train, y_train, X_test, y_test)
 
-def optimiser_modeles(X_train, y_train, X_test, y_test):
-    models = {
+def optimiser_modeles(models, X_train, y_train, X_test, y_test, preprocessor):
+
+    param_grids = {
         'Logistic Regression': {
-            'model': LogisticRegression(
-                max_iter=2000,
-                random_state=42
-            ),
             'params': {
                 'C': loguniform(0.001, 100),
                 'solver': ['lbfgs', 'newton-cg'],
@@ -103,10 +109,6 @@ def optimiser_modeles(X_train, y_train, X_test, y_test):
         },
 
         'Random Forest': {
-            'model': RandomForestClassifier(
-                random_state=42,
-                n_jobs=-1
-            ),
             'params': {
                 'n_estimators': randint(100, 500),
                 'max_depth': [None, 10, 20, 30, 40],
@@ -118,9 +120,6 @@ def optimiser_modeles(X_train, y_train, X_test, y_test):
         },
 
         'Gradient Boosting': {
-            'model': GradientBoostingClassifier(
-                random_state=42
-            ),
             'params': {
                 'n_estimators': randint(100, 500),
                 'learning_rate': loguniform(0.01, 0.3),
@@ -144,12 +143,12 @@ def optimiser_modeles(X_train, y_train, X_test, y_test):
 
         pipeline = Pipeline([
             ("preprocessing", preprocessor),
-            ("model", config["model"])
+            ("model", config)
         ])
 
         param_distributions = {
-            f"model__{parametre}": valeurs
-            for parametre, valeurs in config["params"].items()
+            f"model__{parameter}": values
+            for parameter, values in param_grids[name]['params'].items()
         }
 
         random_search = RandomizedSearchCV(
@@ -179,6 +178,14 @@ def optimiser_modeles(X_train, y_train, X_test, y_test):
 
         y_pred = model.predict(X_test)
 
+        class_names = model.named_steps['model'].classes_
+
+        cm = confusion_matrix(
+            y_test,
+            y_pred,
+            labels=class_names
+        )
+
         results.append({
             'Model': name,
             'Accuracy': accuracy_score(y_test, y_pred),
@@ -190,10 +197,22 @@ def optimiser_modeles(X_train, y_train, X_test, y_test):
             ),
             'F1-score': f1_score(
                 y_test, y_pred, average='macro'
-            )
+            ),
+            'ROC AUC': roc_auc_score(
+                y_test,
+                model.predict_proba(X_test),
+                multi_class='ovr'
+            ),
+            'Confusion Matrix': cm
         })
 
     results_df = pd.DataFrame(results)
+
+    results_df.to_csv(
+        "reports/model_metrics.csv",
+        index=False,
+        encoding="utf-8"
+    )
 
     results_df = results_df.sort_values(
         by='F1-score',
@@ -213,4 +232,4 @@ def optimiser_modeles(X_train, y_train, X_test, y_test):
 
     
 
-optimiser_modeles(X_train, y_train, X_test, y_test)
+# optimiser_modeles(X_train, y_train, X_test, y_test)
