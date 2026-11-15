@@ -8,7 +8,7 @@ models/*.joblib
 __pycache__/
 *.py[cod]
 *.pyo
-
+__init__.py
 .env
 .env.*
 
