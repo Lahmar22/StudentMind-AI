@@ -103,7 +103,7 @@ def pipelineData():
     df = chargement_donnees()
     df = nettoyage_donnees(df)
 
-    X = df.drop('Mental_Health_Risk', axis=1)
+    X = df.drop(columns=['Mental_Health_Risk', 'Part_Time_Job'])
     y = df['Mental_Health_Risk']
 
     numerical_columns = [
@@ -170,9 +170,14 @@ def pipelineData():
         stratify=y
     )
 
+    print(X_train.shape)
+    print(X_test.shape)
+    print(y_train.shape)
+    print(y_test.shape)
+
     return X_train, X_test, y_train, y_test, preprocessor
 
-
+pipelineData()
 # if __name__ == "__main__":
 #     df = chargement_donnees()
 #     df = nettoyage_donnees(df)

@@ -15,7 +15,9 @@ from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
 import joblib
 from sklearn.pipeline import Pipeline
 from pathlib import Path
+# from preprocessing import pipelineData
 
+# X_train, X_test, y_train, y_test, preprocessor = pipelineData()
 
 def trainer_modeles(X_train, y_train, X_test, y_test, preprocessor):
     models = {
@@ -95,7 +97,7 @@ def trainer_modeles(X_train, y_train, X_test, y_test, preprocessor):
     return trained_models
 
 
-# trainer_modeles(X_train, y_train, X_test, y_test)
+# models = trainer_modeles(X_train, y_train, X_test, y_test, preprocessor)
 
 def optimiser_modeles(models, X_train, y_train, X_test, y_test, preprocessor):
 
@@ -232,4 +234,4 @@ def optimiser_modeles(models, X_train, y_train, X_test, y_test, preprocessor):
 
     
 
-# optimiser_modeles(X_train, y_train, X_test, y_test)
+# optimiser_modeles(models, X_train, y_train, X_test, y_test, preprocessor)
